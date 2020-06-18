@@ -92,6 +92,7 @@ impl Certificate {
 
     #[cfg(feature = "native-tls-crate")]
     pub(crate) fn add_to_native_tls(self, tls: &mut native_tls_crate::TlsConnectorBuilder) {
+        eprintln!("Adding cert to native");
         tls.add_root_certificate(self.native);
     }
 
@@ -159,7 +160,8 @@ impl Identity {
     pub fn from_pkcs12_der(der: &[u8], password: &str) -> crate::Result<Identity> {
         Ok(Identity {
             inner: ClientCert::Pkcs12(
-                native_tls_crate::Identity::from_pkcs12(der, password).map_err(crate::error::builder)?,
+                native_tls_crate::Identity::from_pkcs12(der, password)
+                    .map_err(crate::error::builder)?,
             ),
         })
     }
@@ -245,7 +247,8 @@ impl Identity {
     pub(crate) fn add_to_rustls(self, tls: &mut rustls::ClientConfig) -> crate::Result<()> {
         match self.inner {
             ClientCert::Pem { key, certs } => {
-                tls.set_single_client_cert(certs, key).map_err(|e| crate::error::builder(e))?;
+                tls.set_single_client_cert(certs, key)
+                    .map_err(|e| crate::error::builder(e))?;
                 Ok(())
             }
             #[cfg(feature = "native-tls")]
@@ -275,10 +278,7 @@ pub(crate) enum TlsBackend {
     Rustls,
     #[cfg(feature = "rustls-tls")]
     BuiltRustls(rustls::ClientConfig),
-    #[cfg(any(
-        feature = "native-tls",
-        feature = "rustls-tls",
-    ))]
+    #[cfg(any(feature = "native-tls", feature = "rustls-tls",))]
     UnknownPreconfigured,
 }
 
@@ -293,10 +293,7 @@ impl fmt::Debug for TlsBackend {
             TlsBackend::Rustls => write!(f, "Rustls"),
             #[cfg(feature = "rustls-tls")]
             TlsBackend::BuiltRustls(_) => write!(f, "BuiltRustls"),
-            #[cfg(any(
-                feature = "native-tls",
-                feature = "rustls-tls",
-            ))]
+            #[cfg(any(feature = "native-tls", feature = "rustls-tls",))]
             TlsBackend::UnknownPreconfigured => write!(f, "UnknownPreconfigured"),
         }
     }
